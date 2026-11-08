@@ -1,0 +1,24 @@
+{
+  "cross_validation": {
+    "folds": 5,
+    "mean_accuracy": 0.9931,
+    "std_deviation": 0.0138,
+    "fold_scores": [
+      1.0,
+      0.9655,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "test_set_errors": 1,
+  "novel_payload_test": {
+    "malicious_detected": 7,
+    "malicious_total": 8,
+    "malicious_rate": 0.875,
+    "benign_correct": 8,
+    "benign_total": 8,
+    "benign_rate": 1.0
+  },
+  "target_met": true
+}

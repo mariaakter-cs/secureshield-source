@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Environment variables
+.env
+.env.local
+
+# Database (regenerated on run)
+*.db
+*.db-shm
+*.db-wal
+
+# ML model files (large, regenerated from training)
+ml/model/*.pkl
+ml/model/*.joblib
+ml/prepared/
+
+# Reports (generated output)
+reports/*.pdf
+
+# OS
+Thumbs.db

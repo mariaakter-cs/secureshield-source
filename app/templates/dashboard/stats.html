@@ -1,0 +1,83 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Statistics{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Security Overview</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number">{{ stats.total }}</div>
+            <div class="text-muted">Total Requests</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number allowed">{{ stats.allowed }}</div>
+            <div class="text-muted">Allowed</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number blocked">{{ stats.blocked }}</div>
+            <div class="text-muted">Blocked</div>
+        </div>
+    </div>
+</div>
+
+{% if stats.blocked > 0 %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Blocked by Detection Type</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Detection Method</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for method, count in stats.breakdown.items() %}
+                        <tr>
+                            <td>
+                                {% if method == 'rule_sqli' %}
+                                    <span class="badge badge-sqli">SQLi Rules</span>
+                                {% elif method == 'rule_xss' %}
+                                    <span class="badge badge-xss">XSS Rules</span>
+                                {% elif method == 'bruteforce' %}
+                                    <span class="badge badge-bruteforce">Brute-Force</span>
+                                {% elif method == 'ml' %}
+                                    <span class="badge badge-ml">ML Classifier</span>
+                                {% else %}
+                                    <span class="badge badge-none">{{ method }}</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Quick Stats</div>
+            <div class="card-body">
+                {% if stats.total > 0 %}
+                <p>Block rate: <strong>{{ "%.1f"|format(stats.blocked / stats.total * 100) }}%</strong> of all requests</p>
+                {% endif %}
+                <p><a href="/dashboard/logs?outcome=block" class="btn btn-sm btn-outline-danger">View blocked requests →</a></p>
+                <p><a href="/dashboard/logs" class="btn btn-sm btn-outline-secondary">View all logs →</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No blocked requests yet. Try sending some attack payloads through the proxy to see detection in action.
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  # DVWA - Approved test target (deliberately vulnerable)
+  # Built-in MySQL, no external database required
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: secureshield-dvwa
+    platform: linux/amd64
+    ports:
+      - "8080:80"
+    restart: unless-stopped

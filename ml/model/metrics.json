@@ -1,0 +1,14 @@
+{
+  "accuracy": 0.9722,
+  "precision": 0.9524,
+  "recall": 1.0,
+  "f1_score": 0.9756,
+  "confusion_matrix": {
+    "true_negatives": 15,
+    "false_positives": 1,
+    "false_negatives": 0,
+    "true_positives": 20
+  },
+  "train_samples": 143,
+  "test_samples": 36
+}

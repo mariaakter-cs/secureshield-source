@@ -1,0 +1,235 @@
+"""
+proxy.py - Reverse proxy for SecureShield
+
+This is the main module that handles all incoming requests.
+It forwards them to DVWA after running through the detection checks.
+
+I'm using Flask blueprints here so I can keep the proxy routes separate
+from the dashboard routes later on.
+"""
+
+import requests
+from flask import Blueprint, request, Response
+from datetime import datetime
+from urllib.parse import unquote_plus
+import config
+from app.models import log_event
+from rules.sqli import scan_request as sqli_scan
+from rules.xss import scan_request as xss_scan
+from rules import bruteforce
+from ml import predict as ml_predict
+
+proxy_bp = Blueprint("proxy", __name__)
+
+
+# These headers are "hop-by-hop" — they're specific to the connection
+# between client and proxy, not meant to be passed along to the target.
+# See RFC 2616 Section 13.5.1
+EXCLUDED_REQUEST_HEADERS = {
+    "host",
+    "connection",
+    "keep-alive",
+    "transfer-encoding",
+    "te",
+    "trailer",
+    "upgrade",
+    "proxy-authorization",
+    "proxy-authenticate",
+}
+
+# I also need to strip these from the response coming back from DVWA.
+# The big one here is content-encoding: the requests library already
+# decompresses gzip for me, so if I leave the header in, the browser
+# tries to decompress it again and gets a zlib error. Took me a while
+# to figure that one out.
+EXCLUDED_RESPONSE_HEADERS = {
+    "connection",
+    "keep-alive",
+    "transfer-encoding",
+    "te",
+    "trailer",
+    "upgrade",
+    "content-encoding",
+    "content-length",
+}
+
+
+def get_forwarded_headers():
+    """Pull out the headers from the incoming request, minus the
+    hop-by-hop ones that shouldn't be forwarded."""
+    headers = {}
+    for key, value in request.headers:
+        if key.lower() not in EXCLUDED_REQUEST_HEADERS:
+            headers[key] = value
+    return headers
+
+
+def log_request(method, url, source_ip, status_code, decision="ALLOW",
+                body=None, detection_method="none", details=None):
+    """Print a log line and write to the database."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] [{decision}] {source_ip} -> {method} {url} -> {status_code}")
+
+    # write to SQLite
+    outcome = "allow" if decision == "ALLOW" else "block"
+    log_event(
+        source_ip=source_ip,
+        method=method,
+        url=url,
+        body=body,
+        detection_method=detection_method,
+        outcome=outcome,
+        details=details,
+    )
+
+
+# Catch everything — all paths, all methods
+@proxy_bp.route("/", defaults={"path": ""}, methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+@proxy_bp.route("/<path:path>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+def forward_request(path):
+    """
+    Main request handler. Every single request to SecureShield comes
+    through here. Right now it just forwards everything, but this is
+    where I'll plug in the detection logic later:
+
+    - Sprint 5: SQLi regex rules
+    - Sprint 6: XSS regex rules
+    - Sprint 7: Brute-force IP tracking
+    - Sprint 9: ML classifier as fallback
+    """
+    # don't proxy requests to the dashboard
+    if path.startswith("dashboard"):
+        return
+
+    source_ip = request.remote_addr
+    method = request.method
+    target_url = f"{config.TARGET_HOST}/{path}"
+
+    # grab everything we need to reconstruct the request
+    params = request.args.to_dict(flat=False)
+    headers = get_forwarded_headers()
+    body = request.get_data()
+
+    # full URL with query string for logging (so we can see what was actually requested)
+    full_path = f"/{path}"
+    if request.query_string:
+        full_path += f"?{request.query_string.decode('utf-8', errors='replace')}"
+
+    # -------------------------------------------------------
+    # DETECTION PIPELINE
+    # -------------------------------------------------------
+
+    # decode body for inspection
+    body_text = unquote_plus(body.decode("utf-8", errors="replace")) if body else ""
+
+    # get query string decoded (+ becomes space, %27 becomes ', etc.)
+    query_text = unquote_plus(request.query_string.decode("utf-8", errors="replace"))
+
+    # Sprint 5: SQLi check
+    sqli_result = sqli_scan(query_text, body_text)
+    if sqli_result:
+        detail_msg = f"[{sqli_result['category']}] {sqli_result['description']} — matched: {sqli_result['matched']}"
+        log_request(method, full_path, source_ip, 403, "BLOCK",
+                    body=body_text, detection_method="rule_sqli",
+                    details=detail_msg)
+        return Response(
+            "403 Forbidden - Request blocked by SecureShield (SQL Injection detected)",
+            status=403, content_type="text/plain"
+        )
+
+    # Sprint 6: XSS check
+    xss_result = xss_scan(query_text, body_text)
+    if xss_result:
+        detail_msg = f"[{xss_result['category']}] {xss_result['description']} — matched: {xss_result['matched']}"
+        log_request(method, full_path, source_ip, 403, "BLOCK",
+                    body=body_text, detection_method="rule_xss",
+                    details=detail_msg)
+        return Response(
+            "403 Forbidden - Request blocked by SecureShield (XSS detected)",
+            status=403, content_type="text/plain"
+        )
+
+    # Sprint 7: Brute-force check — is this IP already blocked?
+    if bruteforce.is_blocked(source_ip):
+        remaining = int(bruteforce.get_block_remaining(source_ip))
+        detail_msg = f"IP blocked for brute-force. Unblocks in {remaining}s."
+        log_request(method, full_path, source_ip, 403, "BLOCK",
+                    body=body_text, detection_method="bruteforce",
+                    details=detail_msg)
+        return Response(
+            f"403 Forbidden - Your IP has been temporarily blocked ({remaining}s remaining)",
+            status=403, content_type="text/plain"
+        )
+
+    # Sprint 9: ML classifier (backup — only if rules didn't catch it)
+    if ml_predict.is_available():
+        # combine query + body for ML analysis
+        combined_text = f"{query_text} {body_text}".strip()
+        ml_result = ml_predict.predict(combined_text)
+        if ml_result:
+            detail_msg = f"ML classifier: confidence {ml_result['confidence']:.2%}"
+            log_request(method, full_path, source_ip, 403, "BLOCK",
+                        body=body_text, detection_method="ml",
+                        details=detail_msg)
+            return Response(
+                "403 Forbidden - Request blocked by SecureShield (ML classifier flagged as suspicious)",
+                status=403, content_type="text/plain"
+            )
+
+    # -------------------------------------------------------
+
+    # Forward to the target
+    try:
+        resp = requests.request(
+            method=method,
+            url=target_url,
+            headers=headers,
+            params=params,
+            data=body,
+            cookies=request.cookies,
+            allow_redirects=False,
+            timeout=30,
+        )
+
+        # strip out headers that would confuse the client
+        resp_headers = {}
+        for key, value in resp.headers.items():
+            if key.lower() not in EXCLUDED_RESPONSE_HEADERS:
+                resp_headers[key] = value
+
+        proxy_response = Response(
+            response=resp.content,
+            status=resp.status_code,
+            headers=resp_headers,
+        )
+
+        log_request(method, full_path, source_ip, resp.status_code, "ALLOW",
+                    body=body.decode("utf-8", errors="replace") if body else None)
+
+        # Sprint 7: After forwarding, check if this was a login attempt.
+        # Every POST to a login page counts as an attempt. A real user won't
+        # submit the login form 5 times in 10 minutes unless they're guessing
+        # passwords. This is simpler than trying to distinguish success/failure
+        # from the response (DVWA returns 302 for both).
+        if bruteforce.is_login_request(f"/{path}", method):
+            just_blocked = bruteforce.record_failed_attempt(source_ip)
+            if just_blocked:
+                print(f"[SecureShield] IP {source_ip} BLOCKED - exceeded brute-force threshold")
+
+        return proxy_response
+
+    except requests.exceptions.ConnectionError:
+        log_request(method, full_path, source_ip, 502, "ERROR",
+                    body=body.decode("utf-8", errors="replace") if body else None)
+        return Response(
+            "SecureShield: Can't reach the target app. Is DVWA running?",
+            status=502,
+        )
+    except requests.exceptions.Timeout:
+        log_request(method, full_path, source_ip, 504, "ERROR",
+                    body=body.decode("utf-8", errors="replace") if body else None)
+        return Response("SecureShield: Target timed out.", status=504)
+    except requests.exceptions.RequestException as e:
+        log_request(method, full_path, source_ip, 500, "ERROR",
+                    body=body.decode("utf-8", errors="replace") if body else None)
+        return Response(f"SecureShield: Something went wrong - {e}", status=500)

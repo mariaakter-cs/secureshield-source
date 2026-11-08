@@ -1,0 +1,37 @@
+SECURESHIELD DETECTION COMPARISON
+=============================================
+Test samples: 36
+Regex benign test: 0
+Regex SQLi test: 1
+Regex XSS test: 1
+ML benign output: None
+
+Mode: Regex-only
+-----------------------------------
+samples: 36
+TP: 20
+TN: 16
+FP: 0
+FN: 0
+accuracy: 100.00%
+precision: 100.00%
+recall: 100.00%
+f1: 100.00%
+false_positive_rate: 0.00%
+mean_detection_ms: 0.0049 ms
+
+Mode: Regex + ML
+-----------------------------------
+samples: 36
+TP: 20
+TN: 16
+FP: 0
+FN: 0
+accuracy: 100.00%
+precision: 100.00%
+recall: 100.00%
+f1: 100.00%
+false_positive_rate: 0.00%
+mean_detection_ms: 0.0533 ms
+
+Results saved to reports/detection_comparison.json

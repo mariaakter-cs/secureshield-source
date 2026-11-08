@@ -1,0 +1,256 @@
+{
+  "timestamp": "2026-08-20 22:37:10",
+  "sqli": {
+    "tp": 14,
+    "fn": 1,
+    "payloads": [
+      {
+        "payload": "' OR '1'='1",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' OR 1=1 --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' UNION SELECT null,null,null --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "1; DROP TABLE users --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' AND SLEEP(5) --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' AND EXTRACTVALUE(1,CONCAT(0x7e,version())) --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "1' OR '1'='1' /*",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "admin' --",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "payload": "' UNION ALL SELECT username,password FROM users --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "'; WAITFOR DELAY '0:0:5' --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "1 OR 1=1",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' AND 1=CONVERT(int,(SELECT @@version)) --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' UNION SELECT null,table_name FROM information_schema.tables --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "1' AND BENCHMARK(5000000,SHA1('test')) --",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "' OR 'x'='x",
+        "status_code": 403,
+        "blocked": true
+      }
+    ]
+  },
+  "xss": {
+    "tp": 15,
+    "fn": 0,
+    "payloads": [
+      {
+        "payload": "<script>alert(1)</script>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<img src=x onerror=alert(1)>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<svg onload=alert(1)>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<body onload=alert('XSS')>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<iframe src='javascript:alert(1)'>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "javascript:alert(document.cookie)",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<script>document.write('hacked')</script>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<img src=x onerror=eval('alert(1)')>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<input onfocus=alert(1) autofocus>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<a href='javascript:alert(1)'>click</a>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<div onmouseover=alert(1)>hover</div>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<script>window.location='http://evil.com'</script>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<object data='javascript:alert(1)'>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "<embed src='javascript:alert(1)'>",
+        "status_code": 403,
+        "blocked": true
+      },
+      {
+        "payload": "'\"><script>alert(1)</script>",
+        "status_code": 403,
+        "blocked": true
+      }
+    ]
+  },
+  "legitimate": {
+    "tn": 15,
+    "fp": 0,
+    "payloads": [
+      {
+        "input": "hello world",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "john.smith@email.com",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "My name is O'Brien",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "I want to order 5 items",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "search for blue shoes",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "page=2&sort=date",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "username=admin&password=password123",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "The meeting is at 3pm",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "Product ID: 12345",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "Please update my phone number",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "What time does the store open?",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "London to Manchester train",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "Filter by price range",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "My flight is OR1234",
+        "status_code": 302,
+        "blocked": false
+      },
+      {
+        "input": "Table 5 is reserved",
+        "status_code": 302,
+        "blocked": false
+      }
+    ]
+  },
+  "bruteforce": {
+    "detected": true
+  },
+  "summary": {
+    "sqli_detection_rate": 93.3,
+    "xss_detection_rate": 100.0,
+    "false_positive_rate": 0.0,
+    "bruteforce_detected": true,
+    "all_targets_met": true
+  }
+}
